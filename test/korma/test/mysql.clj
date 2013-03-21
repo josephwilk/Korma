@@ -6,7 +6,6 @@
         korma.core
         korma.db))
 
-
 (defdb test-db-mysql (mysql {:db "korma" :user "korma" :password "kormapass"}))
 (defdb test-db-non-mysql (oracle {:db "korma" :user "korma" :password "kormapass" :delimiters "`"}))
 (defentity users-mysql (database test-db-mysql))
@@ -51,6 +50,19 @@
 (defn- clean-korma-db []
   (jdbc/with-connection mysql-uri
     (jdbc/do-commands "DROP DATABASE korma;")))
+
+(deftest test-result-from-delete []
+  (setup-korma-db)
+  (defdb live-db-mysql (mysql {:db "korma" :user "root"}))
+  (defentity users-live-mysql (database live-db-mysql))
+
+  (insert users-live-mysql (values {:name "thiago"}))
+  (is (= 1 (delete users-live-mysql (where  {:name "thiago"}))))
+
+  (insert users-live-mysql (values {:name "thiago"}))
+  (is (= [1] (exec-raw ["DELETE FROM `users-live-mysql` WHERE name=?" ["thiago"] :results])))
+
+  (clean-korma-db))
 
 (deftest test-nested-transactions-work
   (setup-korma-db)
